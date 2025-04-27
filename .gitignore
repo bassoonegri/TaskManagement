@@ -1,0 +1,31 @@
+.vs/
+
+# Ignore build outputs
+bin/
+obj/
+TestResults/
+coveragereport/
+
+# Ignore user-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Ignore docker files
+docker-compose.override.yml
+.env
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore Visual Studio Code settings
+.vscode/
+
+# Ignore logs
+*.log
+
+# Ignore package management outputs
+node_modules/
+packages/

@@ -1,0 +1,9 @@
+bin/
+obj/
+.vscode/
+TestResults/
+coveragereport/
+*.md
+*.log
+Dockerfile
+docker-compose.yml
