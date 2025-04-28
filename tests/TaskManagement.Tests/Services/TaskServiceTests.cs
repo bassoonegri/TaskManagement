@@ -75,7 +75,8 @@ public class TaskServiceTests
         var act = async () => await _taskService.CreateTaskAsync(projectId, newTask);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Task limit exceeded for this project.");
+     .WithMessage("Limite de tarefas excedido para este projeto.");
+
     }
 
     [Fact]
@@ -135,7 +136,8 @@ public class TaskServiceTests
         var act = async () => await _taskService.UpdateTaskAsync(task.Id, updatedTask);
 
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Cannot change task priority after creation.");
+      .WithMessage("Não é permitido alterar a prioridade da tarefa após a criação.");
+
     }
 
     [Fact]

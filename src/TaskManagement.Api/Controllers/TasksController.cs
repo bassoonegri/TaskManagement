@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TaskManagement.Application.Entities;
-using TaskManagement.Infrastructure.Services;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using TaskManagement.Application.UseCases.Tasks.AddComment;
+using TaskManagement.Application.UseCases.Tasks.CreateTask;
+using TaskManagement.Application.UseCases.Tasks.DeleteTask;
+using TaskManagement.Application.UseCases.Tasks.GetAllTasks;
+using TaskManagement.Application.UseCases.Tasks.UpdateTask;
 
 namespace TaskManagement.Api.Controllers;
 
@@ -8,47 +12,48 @@ namespace TaskManagement.Api.Controllers;
 [Route("")]
 public class TasksController : ControllerBase
 {
-    private readonly ITaskService _taskService;
+    private readonly IMediator _mediator;
 
-    public TasksController(ITaskService taskService)
+    public TasksController(IMediator mediator)
     {
-        _taskService = taskService;
+        _mediator = mediator;
     }
 
     [HttpGet("projects/{projectId}/tasks")]
     public async Task<IActionResult> GetTasksByProject(Guid projectId)
     {
-        var tasks = await _taskService.GetTasksByProjectAsync(projectId);
-        return Ok(tasks);
+        var response = await _mediator.Send(new GetAllTasksRequest { ProjectId = projectId });
+        return Ok(response.Tasks);
     }
+
 
     [HttpPost("projects/{projectId}/tasks")]
-    public async Task<IActionResult> CreateTask(Guid projectId, [FromBody] ProjectTask task)
+    public async Task<IActionResult> CreateTask(Guid projectId, [FromBody] CreateTaskRequest request)
     {
-        if (task == null || string.IsNullOrWhiteSpace(task.Title))
-            return BadRequest("Invalid task data.");
+        if (request == null)
+            return BadRequest("Dados da tarefa inválidos.");
 
-        try
-        {
-            var createdTask = await _taskService.CreateTaskAsync(projectId, task);
-            return CreatedAtAction(nameof(GetTasksByProject), new { projectId = createdTask.ProjectId }, createdTask);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        request.ProjectId = projectId;
+
+        var created = await _mediator.Send(request);
+
+        return CreatedAtAction(nameof(GetTasksByProject), new { projectId = created.ProjectId }, created);
     }
 
+
+
     [HttpPut("tasks/{taskId}")]
-    public async Task<IActionResult> UpdateTask(Guid taskId, [FromBody] ProjectTask updatedTask)
+    public async Task<IActionResult> UpdateTask(Guid taskId, [FromBody] UpdateTaskRequest request)
     {
-        if (updatedTask == null)
-            return BadRequest("Invalid task data.");
+        if (request == null)
+            return BadRequest("Dados da tarefa inválidos.");
 
         try
         {
-            var task = await _taskService.UpdateTaskAsync(taskId, updatedTask);
-            return Ok(task);
+            request.TaskId = taskId;
+
+            var response = await _mediator.Send(request);
+            return Ok(response);
         }
         catch (InvalidOperationException ex)
         {
@@ -59,33 +64,42 @@ public class TasksController : ControllerBase
             return NotFound();
         }
     }
+
 
     [HttpDelete("tasks/{taskId}")]
     public async Task<IActionResult> DeleteTask(Guid taskId)
     {
-        var success = await _taskService.DeleteTaskAsync(taskId);
-
-        if (!success)
-            return NotFound();
-
-        return NoContent();
-    }
-
-    [HttpPost("tasks/{taskId}/comments")]
-    public async Task<IActionResult> AddComment(Guid taskId, [FromBody] Comment comment)
-    {
-        if (comment == null || string.IsNullOrWhiteSpace(comment.Content))
-            return BadRequest("Invalid comment.");
-
         try
         {
-            var addedComment = await _taskService.AddCommentAsync(taskId, comment);
-            return CreatedAtAction(nameof(GetTasksByProject), new { projectId = addedComment.TaskId }, addedComment);
+            var response = await _mediator.Send(new DeleteTaskRequest { TaskId = taskId });
+
+            return response.Success ? NoContent() : BadRequest();
         }
         catch (KeyNotFoundException)
         {
             return NotFound();
         }
     }
+
+
+    [HttpPost("tasks/{taskId}/comments")]
+    public async Task<IActionResult> AddComment(Guid taskId, [FromBody] AddCommentRequest request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Content))
+            return BadRequest("Comentário inválido.");
+
+        try
+        {
+            request.TaskId = taskId;
+
+            var response = await _mediator.Send(request);
+            return CreatedAtAction(nameof(GetTasksByProject), new { projectId = response.TaskId }, response);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
 
 }

@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TaskManagement.Application.Entities;
-using TaskManagement.Infrastructure.Services;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using TaskManagement.Application.UseCases.Projects.CreateProject;
+using TaskManagement.Application.UseCases.Projects.DeleteProject;
+using TaskManagement.Application.UseCases.Projects.GetAllProjects;
 
 namespace TaskManagement.Api.Controllers;
 
@@ -8,31 +10,32 @@ namespace TaskManagement.Api.Controllers;
 [Route("projects")]
 public class ProjectsController : ControllerBase
 {
-    private readonly IProjectService _projectService;
+    private readonly IMediator _mediator;
 
-    public ProjectsController(IProjectService projectService)
+    public ProjectsController(IMediator mediator)
     {
-        _projectService = projectService;
+        _mediator = mediator;
     }
+
 
     [HttpGet]
     public async Task<IActionResult> GetProjectsByUser([FromQuery] Guid userId)
     {
         if (userId == Guid.Empty)
-            return BadRequest("UserId is required.");
+            return BadRequest("UserId é obrigatório.");
 
-        var projects = await _projectService.GetProjectsByUserAsync(userId);
-        return Ok(projects);
+        var result = await _mediator.Send(new GetAllProjectsRequest { UserId = userId });
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateProject([FromBody] Project project)
+    public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
     {
-        if (project == null || string.IsNullOrWhiteSpace(project.Name) || project.UserId == Guid.Empty)
-            return BadRequest("Invalid project data.");
+        if (request == null)
+            return BadRequest("Dados do projeto inválidos.");
 
-        var createdProject = await _projectService.CreateProjectAsync(project);
-        return CreatedAtAction(nameof(GetProjectsByUser), new { userId = createdProject.UserId }, createdProject);
+        var result = await _mediator.Send(request);
+        return Ok(result);
     }
 
     [HttpDelete("{projectId}")]
@@ -40,16 +43,19 @@ public class ProjectsController : ControllerBase
     {
         try
         {
-            var result = await _projectService.DeleteProjectAsync(projectId);
-            if (!result)
-                return NotFound("Projeto não encontrado.");
+            var response = await _mediator.Send(new DeleteProjectRequest { ProjectId = projectId });
 
-            return NoContent();
+            return response.Success ? NoContent() : BadRequest("Erro ao excluir projeto.");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
         }
     }
+
 }
 

@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TaskManagement.Infrastructure.Services;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using TaskManagement.Application.UseCases.Reports.GetPerformanceReport;
 
 namespace TaskManagement.Api.Controllers;
 
@@ -7,20 +8,24 @@ namespace TaskManagement.Api.Controllers;
 [Route("reports")]
 public class ReportsController : ControllerBase
 {
-    private readonly IReportService _reportService;
+    private readonly IMediator _mediator;
 
-    public ReportsController(IReportService reportService)
+    public ReportsController(IMediator mediator)
     {
-        _reportService = reportService;
+        _mediator = mediator;
     }
 
     [HttpGet("performance")]
     public async Task<IActionResult> GetPerformanceReport([FromQuery] string role)
     {
-        if (!string.Equals(role, "manager", StringComparison.OrdinalIgnoreCase))
-            return Forbid("Access restricted to managers.");
+        if (string.IsNullOrWhiteSpace(role))
+            return BadRequest("Função de usuário é obrigatória.");
 
-        var average = await _reportService.GetAverageCompletedTasksPerUserAsync();
-        return Ok(new { AverageCompletedTasks = average });
+        if (!string.Equals(role, "manager", StringComparison.OrdinalIgnoreCase))
+            return Forbid("Acesso restrito a gerentes.");
+
+        var result = await _mediator.Send(new GetPerformanceReportRequest { Role = role });
+        return Ok(new { AverageCompletedTasks = result.AverageCompletedTasks });
     }
+
 }

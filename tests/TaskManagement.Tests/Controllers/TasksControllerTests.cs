@@ -1,23 +1,29 @@
 ﻿using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskManagement.Api.Controllers;
-using TaskManagement.Infrastructure.Services;
+using TaskManagement.Application.UseCases.Tasks.AddComment;
+using TaskManagement.Application.UseCases.Tasks.CreateTask;
+using TaskManagement.Application.UseCases.Tasks.UpdateTask;
+using TaskManagement.Application.UseCases.Tasks.DeleteTask;
 using Xunit;
+using System.Collections.Generic;
 
 namespace TaskManagement.Tests.Controllers
 {
     public class TasksControllerTests
     {
-        private readonly Mock<ITaskService> _taskServiceMock;
+        private readonly Mock<IMediator> _mediatorMock;
         private readonly TasksController _controller;
 
         public TasksControllerTests()
         {
-            _taskServiceMock = new Mock<ITaskService>();
-            _controller = new TasksController(_taskServiceMock.Object);
+            _mediatorMock = new Mock<IMediator>();
+            _controller = new TasksController(_mediatorMock.Object);
         }
 
         [Fact]
@@ -47,8 +53,8 @@ namespace TaskManagement.Tests.Controllers
         [Fact]
         public async Task DeleteTask_Should_Return_NotFound_When_Task_Does_Not_Exist()
         {
-            _taskServiceMock.Setup(s => s.DeleteTaskAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(false);
+            _mediatorMock.Setup(m => m.Send(It.IsAny<DeleteTaskRequest>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new KeyNotFoundException());
 
             var result = await _controller.DeleteTask(Guid.NewGuid());
 
