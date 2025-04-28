@@ -136,8 +136,6 @@ README.md
 
 - Implementar autenticação e autorização usando JWT
 - Criar controle de papéis (usuário padrão e gerente)
-- Aplicar arquitetura CQRS + Mediatr para melhor escalabilidade
-- Dividir a aplicação em camadas Domain, Application, Infrastructure seguindo DDD
 - Implementar logs estruturados (Serilog) e monitoramento via Application Insights
 - Utilizar Docker Compose para orquestração de ambientes (dev, staging, prod)
 - Implementar CI/CD com GitHub Actions
