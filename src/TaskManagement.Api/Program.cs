@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TaskManagement.Application.Repositories;
+using TaskManagement.Application.UseCases.Projects.CreateProject;
 using TaskManagement.Infrastructure.Context;
 using TaskManagement.Infrastructure.Repositories;
 using TaskManagement.Infrastructure.Services;
@@ -13,8 +14,10 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 builder.Services.AddDbContext<TaskManagementDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddMediatR(typeof(TaskManagement.Application.UseCases.Projects.CreateProject.CreateProjectHandler).Assembly);
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateProjectHandler).Assembly));
 
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 
 builder.Services.AddScoped<IProjectService, ProjectService>();
